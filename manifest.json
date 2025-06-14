@@ -3,13 +3,49 @@
     "name": "NomNom Extension",
     "version": "1.0.0",
     "description": "A Chrome extension for NomNom",
-    "permissions": [],
-    "action": {
-        "default_popup": "popup.html"
-    },
+    "permissions": [
+        "scripting",
+        "clipboardWrite",
+        "clipboardRead"
+    ],
+    "action": {},
     "icons": {
         "16": "icons/icon16.png",
         "48": "icons/icon48.png",
         "128": "icons/icon128.png"
-    }
+    },
+    "web_accessible_resources": [
+        {
+            "resources": [
+                "icons/nomnom.png",
+                "icons/icon16.png",
+                "icons/icon48.png",
+                "icons/icon128.png",
+                "icons/comment-nomnom.png",
+                "nomnomEditor.html"
+            ],
+            "matches": [
+                "<all_urls>"
+            ]
+        }
+    ],
+    "content_scripts": [
+        {
+            "matches": [
+                "https://x.com/*",
+                "https://www.x.com/*",
+                "http://x.com/*",
+                "http://www.x.com/*",
+                "https://twitter.com/*",
+                "https://www.twitter.com/*",
+                "http://twitter.com/*",
+                "http://www.twitter.com/*"
+            ],
+            "js": [
+                "contentScript.js"
+            ],
+            "run_at": "document_idle",
+            "all_frames": true
+        }
+    ]
 }

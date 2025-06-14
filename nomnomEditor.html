@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>NomNom Editor</title>
+    <!-- <style>
+        #nomnom-modal {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            background: rgba(0, 0, 0, 0.5) !important;
+            z-index: 2147483647 !important;
+            pointer-events: all !important;
+            border: none !important;
+        }
+
+        #nomnom-editor {
+            position: fixed !important;
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) !important;
+            background: #fff !important;
+            z-index: 2147483647 !important;
+            min-width: 350px !important;
+            min-height: 350px !important;
+            box-shadow: 0 2px 16px rgba(0, 0, 0, 0.2) !important;
+            border-radius: 12px !important;
+            padding: 20px !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+        }
+
+        #edit-image-container {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            background: #eee;
+            margin-bottom: 16px;
+            overflow: hidden;
+            border-radius: 8px;
+        }
+
+        #edit-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        #nomnom-overlay {
+            position: absolute;
+            top: 50px;
+            left: 50px;
+            width: 100px;
+            height: 100px;
+            cursor: move;
+            z-index: 2;
+            user-select: none;
+            touch-action: none;
+        }
+
+        .nomnom-editor-btns {
+            display: flex;
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .nomnom-editor-btns button {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: none;
+            background: #ffd166;
+            color: #222;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .nomnom-editor-btns button:hover {
+            background: #ffa600;
+        }
+
+        #nomnom-close {
+            position: absolute;
+            top: 8px;
+            right: 12px;
+            background: none;
+            border: none;
+            font-size: 22px;
+            cursor: pointer;
+            color: #888;
+        }
+    </style> -->
+</head>
+
+<body>
+    <div id="nomnom-modal"
+        style="position:fixed;top:0;left:0;right:0;bottom:0;z-index:2147483647;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;">
+        <div id="nomnom-editor"
+            style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;z-index:2147483647;min-width:350px;min-height:350px;box-shadow:0 2px 16px rgba(0,0,0,0.2);border-radius:12px;padding:20px;display:flex;flex-direction:column;align-items:center;">
+            <button id="nomnom-close"
+                style="position:absolute;top:8px;right:12px;background:none;border:none;font-size:22px;cursor:pointer;color:#888;">&times;</button>
+            <div id="edit-image-container"
+                style="position:relative;width:300px;height:300px;background:#eee;margin-bottom:16px;overflow:hidden;border-radius:8px;">
+                <img id="edit-image" src="" alt="Image to edit"
+                    style="width:100%;height:100%;object-fit:contain;position:absolute;top:0;left:0;">
+                <img id="nomnom-overlay" src="" alt="NomNom overlay"
+                    style="position:absolute;top:50px;left:50px;width:100px;height:100px;cursor:move;z-index:2;user-select:none;touch-action:none;">
+                <!-- Resize handles (corners) -->
+                <div class="resize-handle" data-corner="nw"
+                    style="position:absolute;top:40px;left:40px;width:12px;height:12px;background:#ffd166;border-radius:50%;border:2px solid #fff;cursor:nwse-resize;z-index:3;">
+                </div>
+                <div class="resize-handle" data-corner="ne"
+                    style="position:absolute;top:40px;left:138px;width:12px;height:12px;background:#ffd166;border-radius:50%;border:2px solid #fff;cursor:nesw-resize;z-index:3;">
+                </div>
+                <div class="resize-handle" data-corner="sw"
+                    style="position:absolute;top:138px;left:40px;width:12px;height:12px;background:#ffd166;border-radius:50%;border:2px solid #fff;cursor:nesw-resize;z-index:3;">
+                </div>
+                <div class="resize-handle" data-corner="se"
+                    style="position:absolute;top:138px;left:138px;width:12px;height:12px;background:#ffd166;border-radius:50%;border:2px solid #fff;cursor:nwse-resize;z-index:3;">
+                </div>
+                <!-- Rotate handle (top center) -->
+                <div class="rotate-handle"
+                    style="position:absolute;top:28px;left:90px;width:16px;height:16px;background:#ffa600;border-radius:50%;border:2px solid #fff;cursor:grab;z-index:3;">
+                </div>
+                <!-- Hidden input for auto-paste -->
+                <input id="hidden-paste-input" type="text"
+                    style="position:absolute;left:-9999px;top:-9999px;opacity:0;width:1px;height:1px;" autofocus>
+            </div>
+            <div class="nomnom-editor-btns" style="display:flex;gap:12px;margin-top:12px;">
+                <button id="copy-btn"
+                    style="padding:8px 16px;border-radius:6px;border:none;background:#ffd166;color:#222;font-weight:bold;cursor:pointer;transition:background 0.2s;">Copy
+                    to Clipboard</button>
+                <button id="paste-btn"
+                    style="padding:8px 16px;border-radius:6px;border:none;background:#ffd166;color:#222;font-weight:bold;cursor:pointer;transition:background 0.2s;">Paste
+                    Image</button>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
