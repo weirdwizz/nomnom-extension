@@ -12,7 +12,8 @@ A Chrome extension for NomNom.
 ## Project Structure
 
 - `manifest.json` - Extension configuration
-- `popup.html` - Extension popup interface
+- `contentScript.js` - Main extension logic
+- `nomnomEditor.html` - Editor interface
 - `icons/` - Extension icons
 
 ## License
