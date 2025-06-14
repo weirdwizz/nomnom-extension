@@ -355,14 +355,17 @@ function setupNomnomOverlay() {
       centerY = rect.top + rect.height / 2;
       // Calculate current angle
       const transform = overlay.style.transform;
-      lastAngle = 0;
+      let initialAngle = 0;
       if (transform && transform.startsWith('rotate(')) {
-        lastAngle = parseFloat(transform.match(/rotate\(([-0-9.]+)rad\)/)?.[1] || '0');
+        initialAngle = parseFloat(transform.match(/rotate\(([-0-9.]+)rad\)/)?.[1] || '0');
       }
+      // Store the angle between mouse and center at drag start
+      const startMouseAngle = Math.atan2(e.clientY - centerY, e.clientX - centerX);
       document.onmousemove = (ev) => {
         if (rotating) {
-          const angle = Math.atan2(ev.clientY - centerY, ev.clientX - centerX);
-          overlay.style.transform = `rotate(${angle}rad)`;
+          const currentMouseAngle = Math.atan2(ev.clientY - centerY, ev.clientX - centerX);
+          const delta = currentMouseAngle - startMouseAngle;
+          overlay.style.transform = `rotate(${initialAngle + delta}rad)`;
         }
       };
       document.onmouseup = () => {
