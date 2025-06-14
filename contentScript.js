@@ -277,9 +277,7 @@ function setupNomnomOverlay() {
       if (dragging) {
         let newLeft = ev.clientX - startX;
         let newTop = ev.clientY - startY;
-        // Clamp to container
-        newLeft = Math.max(0, Math.min(container.offsetWidth - overlay.offsetWidth, newLeft));
-        newTop = Math.max(0, Math.min(container.offsetHeight - overlay.offsetHeight, newTop));
+        // Remove container bounds check to allow moving outside
         overlay.style.left = newLeft + 'px';
         overlay.style.top = newTop + 'px';
         updateHandles();
