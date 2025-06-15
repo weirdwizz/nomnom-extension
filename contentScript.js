@@ -530,6 +530,18 @@ function injectNomNomReplyButtons() {
     btn.style.marginLeft = '8px';
     btn.style.verticalAlign = 'middle';
     btn.innerHTML = `<img src="${chrome.runtime.getURL('icons/comment-nomnom.png')}" alt="NomNom" style="width:22px;height:22px;">`;
+    btn.onmouseover = () => {
+        const img = btn.querySelector('img');
+        if (img) {
+            img.style.filter = 'brightness(0) saturate(100%) invert(45%) sepia(98%) saturate(1234%) hue-rotate(187deg) brightness(97%) contrast(101%)';
+        }
+    };
+    btn.onmouseout = () => {
+        const img = btn.querySelector('img');
+        if (img) {
+            img.style.filter = 'none';
+        }
+    };
 
     // Insert after the reply button
     replyBtn.parentElement.appendChild(btn);
