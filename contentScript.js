@@ -97,22 +97,44 @@ function showNomnomEditor(imgSrc, commentArea) {
   let modalElem = document.getElementById('nomnom-modal');
   if (modalElem) modalElem.remove();
 
+  // Create modal
+  const modal = document.createElement('div');
+  modal.id = 'nomnom-modal';
+  modal.style.position = 'fixed';
+  modal.style.top = '0';
+  modal.style.left = '0';
+  modal.style.width = '100%';
+  modal.style.height = '100%';
+  modal.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+  modal.style.display = 'flex';
+  modal.style.justifyContent = 'center';
+  modal.style.alignItems = 'center';
+  modal.style.zIndex = '9999';
+  modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+          modal.remove();
+      }
+  });
+
   // Fetch the HTML for the editor
   fetch(chrome.runtime.getURL('nomnomEditor.html'))
-    .then(res => res.text())
+    .then(response => response.text())
     .then(html => {
-      const div = document.createElement('div');
-      div.innerHTML = html;
-      let modalElem = div.querySelector('#nomnom-modal');
-      if (!modalElem) {
-        modalElem = div.firstElementChild;
+      // Create a temporary container to parse the HTML
+      const temp = document.createElement('div');
+      temp.innerHTML = html;
+
+      // Get the editor container
+      const editorContainer = temp.querySelector('#nomnom-editor');
+      if (!editorContainer) {
+          console.error('Editor container not found in HTML');
+          return;
       }
-      if (!modalElem) {
-        alert('Failed to load NomNom editor modal!');
-        return;
-      }
-      document.body.appendChild(modalElem);
-      modalElem.style.display = 'flex';
+
+      // Add the editor to the modal
+      modal.appendChild(editorContainer);
+      document.body.appendChild(modal);
+      modal.style.display = 'flex';
       // Set the image
       document.getElementById('edit-image').src = imgSrc;
       // Dynamically resize the container to match the image aspect ratio
@@ -529,11 +551,11 @@ function injectNomNomReplyButtons() {
     btn.style.cursor = 'pointer';
     btn.style.marginLeft = '8px';
     btn.style.verticalAlign = 'middle';
-    btn.innerHTML = `<img src="${chrome.runtime.getURL('icons/comment-nomnom.png')}" alt="NomNom" style="width:22px;height:22px;">`;
+    btn.innerHTML = `<img src="${chrome.runtime.getURL('icons/comment-nomnom-bold.png')}" alt="NomNom" style="width:22px;height:22px;">`;
     btn.onmouseover = () => {
         const img = btn.querySelector('img');
         if (img) {
-            img.style.filter = 'brightness(0) saturate(100%) invert(45%) sepia(98%) saturate(1234%) hue-rotate(187deg) brightness(97%) contrast(101%)';
+            img.style.filter = 'brightness(0) saturate(100%) invert(48%) sepia(98%) saturate(1234%) hue-rotate(358deg) brightness(101%) contrast(101%)';
         }
     };
     btn.onmouseout = () => {
