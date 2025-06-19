@@ -450,17 +450,33 @@ async function renderAndCopyOrInsert(action, commentArea) {
   const editImg = document.getElementById('edit-image');
   const overlay = document.getElementById('nomnom-overlay');
   const container = document.getElementById('edit-image-container');
+  
+  // Get the flip state from the overlay's transform
+  const transform = overlay.style.transform;
+  let angle = 0;
+  let isFlipped = false;
+  if (transform) {
+    if (transform.includes('rotate(')) {
+      angle = parseFloat(transform.match(/rotate\(([-0-9.]+)rad\)/)?.[1] || '0');
+    }
+    if (transform.includes('scaleX(-1)')) {
+      isFlipped = true;
+    }
+  }
+  
   // Create a canvas
   const canvas = document.createElement('canvas');
   canvas.width = editImg.naturalWidth;
   canvas.height = editImg.naturalHeight;
   const ctx = canvas.getContext('2d');
+  
   // Draw the main image
   const mainImg = new window.Image();
   mainImg.crossOrigin = 'anonymous';
   mainImg.src = editImg.src;
   await new Promise(res => { mainImg.onload = res; });
   ctx.drawImage(mainImg, 0, 0, canvas.width, canvas.height);
+  
   // Calculate overlay position/size/rotation relative to the main image
   const scaleX = canvas.width / container.offsetWidth;
   const scaleY = canvas.height / container.offsetHeight;
@@ -469,19 +485,18 @@ async function renderAndCopyOrInsert(action, commentArea) {
   const overlayWidth = overlay.offsetWidth * scaleX;
   const aspectRatio = overlay.naturalWidth / overlay.naturalHeight;
   const overlayHeight = overlayWidth / aspectRatio;
-  // Get rotation from transform
-  const transform = overlay.style.transform;
-  let angle = 0;
-  if (transform && transform.startsWith('rotate(')) {
-    angle = parseFloat(transform.match(/rotate\(([-0-9.]+)rad\)/)?.[1] || '0');
-  }
-  // Draw the overlay with rotation, aligning top-left then rotating around center
+  
+  // Draw the overlay with rotation and flip, aligning top-left then rotating around center
   ctx.save();
   ctx.translate(overlayLeft, overlayTop); // Move to overlay's top-left
   ctx.translate(overlayWidth/2, overlayHeight/2); // Move to center of overlay
   ctx.rotate(angle);
+  if (isFlipped) {
+    ctx.scale(-1, 1); // Apply horizontal flip
+  }
   ctx.drawImage(overlay, -overlayWidth/2, -overlayHeight/2, overlayWidth, overlayHeight);
   ctx.restore();
+  
   // Export as blob
   canvas.toBlob(async (blob) => {
     if (!blob) return alert('Failed to render image!');
