@@ -1,8 +1,8 @@
 {
     "manifest_version": 3,
-    "name": "NomNom Extension",
-    "version": "1.0.1",
-    "description": "A Chrome extension for NomNom",
+    "name": "Nom It!",
+    "version": "1.0.2",
+    "description": "Add the iconic NomNom overlay to any image on Twitter/X!",
     "permissions": [
         "clipboardWrite",
         "clipboardRead"
