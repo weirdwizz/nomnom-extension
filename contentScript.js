@@ -155,16 +155,26 @@ function showNomnomEditor(imgSrc, commentArea) {
         editImg.style.width = '100%';
         editImg.style.height = '100%';
       };
-      // Set the nomnom overlay image src dynamically
-      document.getElementById('nomnom-overlay').src = chrome.runtime.getURL('icons/nomnom.png');
+      
+      // Initialize overlays array
+      window.nomnomOverlays = [];
+      
+      // Set up Add NomNom button
+      document.getElementById('add-nomnom-btn').onclick = () => {
+        addNewNomNomOverlay();
+      };
+      
+      // Add the first overlay
+      addNewNomNomOverlay();
+      
       // Set up close button
       document.getElementById('nomnom-close').onclick = () => modalElem.remove();
-      // Set up overlay move/resize/rotate
-      setupNomnomOverlay();
+      
       // Set up copy/insert buttons
       document.getElementById('copy-btn').onclick = async () => {
         await renderAndCopyOrInsert('copy');
       };
+      
       // Add insert button
       const insertBtn = document.createElement('button');
       insertBtn.id = 'insert-btn';
@@ -186,6 +196,7 @@ function showNomnomEditor(imgSrc, commentArea) {
         await renderAndCopyOrInsert('insert', currentCommentArea);
       };
       document.getElementById('copy-btn').parentElement.appendChild(insertBtn);
+      
       // Set up paste image button
       const pasteBtn = document.getElementById('paste-btn');
       async function handlePasteImage() {
@@ -200,269 +211,28 @@ function showNomnomEditor(imgSrc, commentArea) {
               return;
             }
           }
-          alert('No image found in clipboard! Please copy an image first.');
-        } catch (err) {
-          alert('Failed to read clipboard: ' + err);
+          alert('No image found in clipboard!');
+        } catch (e) {
+          alert('Failed to read clipboard: ' + e);
         }
       }
-      if (pasteBtn) {
-        pasteBtn.onclick = handlePasteImage;
-      }
-      // Auto-focus hidden input and handle its paste event for auto-paste
-      const hiddenPasteInput = document.getElementById('hidden-paste-input');
-      if (hiddenPasteInput) {
-        hiddenPasteInput.focus();
-        hiddenPasteInput.addEventListener('paste', (e) => {
-          if (e.clipboardData) {
-            const items = Array.from(e.clipboardData.items);
-            const imageItem = items.find(item => item.type.startsWith('image/'));
-            if (imageItem) {
-              e.preventDefault();
-              const blob = imageItem.getAsFile();
-              const url = URL.createObjectURL(blob);
-              document.getElementById('edit-image').src = url;
-            }
-          }
-        });
+      pasteBtn.onclick = handlePasteImage;
+      
+      // Focus the hidden input for paste shortcut
+      const hiddenInput = document.getElementById('hidden-paste-input');
+      if (hiddenInput) {
+        hiddenInput.focus();
+        hiddenInput.onpaste = (e) => {
+          e.preventDefault();
+          handlePasteImage();
+        };
       }
     });
-}
-
-function setupNomnomOverlay() {
-  const overlay = document.getElementById('nomnom-overlay');
-  const container = document.getElementById('edit-image-container');
-  const handles = container.querySelectorAll('.resize-handle');
-  const rotateHandle = container.querySelector('.rotate-handle');
-  const flipHandle = container.querySelector('.flip-handle');
-
-  let dragging = false, resizing = false, rotating = false;
-  let startX, startY, startWidth, startHeight, startLeft, startTop, startAngle, centerX, centerY;
-  let lastAngle = 0, lastWidth = 100, lastHeight = 100, lastLeft = 50, lastTop = 50;
-  let currentCorner = null;
-  let isFlipped = false;
-
-  // Store the natural aspect ratio of the overlay image
-  let overlayAspectRatio = 1;
-  // Set overlay style to object-fit: contain to prevent CSS squishing
-  overlay.style.objectFit = 'contain';
-
-  function setOverlayInitialSize() {
-    if (overlay.naturalWidth && overlay.naturalHeight) {
-      overlayAspectRatio = overlay.naturalWidth / overlay.naturalHeight;
-      // Set initial width and height to 100px wide, proportional height
-      overlay.style.width = '100px';
-      overlay.style.height = (100 / overlayAspectRatio) + 'px';
-      overlay.style.objectFit = 'contain';
-    }
-  }
-  if (overlay.naturalWidth && overlay.naturalHeight) {
-    setOverlayInitialSize();
-  } else {
-    overlay.onload = setOverlayInitialSize;
-  }
-
-  // Helper to update handle positions
-  function updateHandles() {
-    const left = overlay.offsetLeft;
-    const top = overlay.offsetTop;
-    const width = overlay.offsetWidth;
-    const height = overlay.offsetHeight;
-    // Corners
-    handles.forEach(handle => {
-      const corner = handle.getAttribute('data-corner');
-      if (corner === 'nw') {
-        handle.style.left = (left - 10) + 'px';
-        handle.style.top = (top - 10) + 'px';
-      } else if (corner === 'ne') {
-        handle.style.left = (left + width - 2) + 'px';
-        handle.style.top = (top - 10) + 'px';
-      } else if (corner === 'sw') {
-        handle.style.left = (left - 10) + 'px';
-        handle.style.top = (top + height - 2) + 'px';
-      } else if (corner === 'se') {
-        handle.style.left = (left + width - 2) + 'px';
-        handle.style.top = (top + height - 2) + 'px';
-      }
-    });
-    // Rotate handle (top center)
-    if (rotateHandle) {
-      rotateHandle.style.left = (left + width / 2 - 8) + 'px';
-      rotateHandle.style.top = (top - 22) + 'px';
-    }
-    // Flip handle (bottom center)
-    if (flipHandle) {
-      flipHandle.style.left = (left + width / 2 - 8) + 'px';
-      flipHandle.style.bottom = (container.offsetHeight - top - height - 6) + 'px';
-    }
-  }
-
-  // Move
-  overlay.onmousedown = (e) => {
-    if (e.target.classList.contains('resize-handle') || e.target.classList.contains('rotate-handle') || e.target.classList.contains('flip-handle')) return;
-    dragging = true;
-    startX = e.clientX - overlay.offsetLeft;
-    startY = e.clientY - overlay.offsetTop;
-    document.onmousemove = (ev) => {
-      if (dragging) {
-        let newLeft = ev.clientX - startX;
-        let newTop = ev.clientY - startY;
-        // Remove container bounds check to allow moving outside
-        overlay.style.left = newLeft + 'px';
-        overlay.style.top = newTop + 'px';
-        updateHandles();
-      }
-    };
-    document.onmouseup = () => {
-      dragging = false;
-      document.onmousemove = null;
-      document.onmouseup = null;
-    };
-  };
-
-  // Force overlay height to match aspect ratio whenever width changes
-  const enforceAspectRatio = () => {
-    if (overlay.naturalWidth && overlay.naturalHeight) {
-      const aspect = overlay.naturalWidth / overlay.naturalHeight;
-      overlay.style.height = (overlay.offsetWidth / aspect) + 'px';
-    }
-  };
-  const observer = new MutationObserver(() => {
-    enforceAspectRatio();
-  });
-  observer.observe(overlay, { attributes: true, attributeFilter: ['style'] });
-
-  // Patch resize logic: only allow width to change, always set height from aspect ratio
-  handles.forEach(handle => {
-    handle.onmousedown = (e) => {
-      e.stopPropagation();
-      resizing = true;
-      currentCorner = handle.getAttribute('data-corner');
-      startX = e.clientX;
-      startY = e.clientY;
-      startWidth = overlay.offsetWidth;
-      startLeft = overlay.offsetLeft;
-      startTop = overlay.offsetTop;
-      // Calculate aspect ratio
-      const aspectRatio = overlay.naturalWidth / overlay.naturalHeight;
-      document.onmousemove = (ev) => {
-        if (resizing) {
-          let dx = ev.clientX - startX;
-          let newWidth = startWidth;
-          let newLeft = startLeft;
-          let newTop = startTop;
-          if (currentCorner === 'nw' || currentCorner === 'sw') {
-            newWidth = Math.max(30, startWidth - dx);
-            newLeft = startLeft + (startWidth - newWidth);
-          } else if (currentCorner === 'ne' || currentCorner === 'se') {
-            newWidth = Math.max(30, startWidth + dx);
-          }
-          overlay.style.width = newWidth + 'px';
-          overlay.style.height = (newWidth / aspectRatio) + 'px';
-          overlay.style.left = newLeft + 'px';
-          overlay.style.top = newTop + 'px';
-          updateHandles();
-        }
-      };
-      document.onmouseup = () => {
-        resizing = false;
-        document.onmousemove = null;
-        document.onmouseup = null;
-      };
-    };
-  });
-
-  // Rotate
-  if (rotateHandle) {
-    rotateHandle.onmousedown = (e) => {
-      e.stopPropagation();
-      rotating = true;
-      const rect = overlay.getBoundingClientRect();
-      const containerRect = container.getBoundingClientRect();
-      centerX = rect.left + rect.width / 2;
-      centerY = rect.top + rect.height / 2;
-      // Calculate current angle
-      const transform = overlay.style.transform;
-      let initialAngle = 0;
-      if (transform && transform.startsWith('rotate(')) {
-        initialAngle = parseFloat(transform.match(/rotate\(([-0-9.]+)rad\)/)?.[1] || '0');
-      }
-      // Store the angle between mouse and center at drag start
-      const startMouseAngle = Math.atan2(e.clientY - centerY, e.clientX - centerX);
-      document.onmousemove = (ev) => {
-        if (rotating) {
-          const currentMouseAngle = Math.atan2(ev.clientY - centerY, ev.clientX - centerX);
-          const delta = currentMouseAngle - startMouseAngle;
-          overlay.style.transform = `rotate(${initialAngle + delta}rad) scaleX(${isFlipped ? -1 : 1})`;
-        }
-      };
-      document.onmouseup = () => {
-        rotating = false;
-        document.onmousemove = null;
-        document.onmouseup = null;
-      };
-    };
-  }
-
-  // Flip
-  if (flipHandle) {
-    flipHandle.onclick = (e) => {
-      e.stopPropagation();
-      isFlipped = !isFlipped;
-      const transform = overlay.style.transform;
-      let angle = 0;
-      if (transform && transform.startsWith('rotate(')) {
-        angle = parseFloat(transform.match(/rotate\(([-0-9.]+)rad\)/)?.[1] || '0');
-      }
-      overlay.style.transform = `rotate(${angle}rad) scaleX(${isFlipped ? -1 : 1})`;
-    };
-  }
-
-  // Prevent image drag ghost
-  overlay.ondragstart = () => false;
-  updateHandles();
-
-  // Debug log overlay and container properties
-  console.log('Overlay:', {
-    offsetLeft: overlay.offsetLeft,
-    offsetTop: overlay.offsetTop,
-    offsetWidth: overlay.offsetWidth,
-    offsetHeight: overlay.offsetHeight,
-    naturalWidth: overlay.naturalWidth,
-    naturalHeight: overlay.naturalHeight
-  });
-  console.log('Container:', {
-    offsetWidth: container.offsetWidth,
-    offsetHeight: container.offsetHeight
-  });
-
-  // Debug logs for overlay and container
-  console.log('overlay.offsetLeft:', overlay.offsetLeft);
-  console.log('overlay.offsetTop:', overlay.offsetTop);
-  console.log('overlay.offsetWidth:', overlay.offsetWidth);
-  console.log('overlay.offsetHeight:', overlay.offsetHeight);
-  console.log('container.offsetWidth:', container.offsetWidth);
-  console.log('container.offsetHeight:', container.offsetHeight);
-  console.log('window.getComputedStyle(container):', window.getComputedStyle(container));
-  console.log('window.getComputedStyle(overlay):', window.getComputedStyle(overlay));
 }
 
 async function renderAndCopyOrInsert(action, commentArea) {
   const editImg = document.getElementById('edit-image');
-  const overlay = document.getElementById('nomnom-overlay');
   const container = document.getElementById('edit-image-container');
-  
-  // Get the flip state from the overlay's transform
-  const transform = overlay.style.transform;
-  let angle = 0;
-  let isFlipped = false;
-  if (transform) {
-    if (transform.includes('rotate(')) {
-      angle = parseFloat(transform.match(/rotate\(([-0-9.]+)rad\)/)?.[1] || '0');
-    }
-    if (transform.includes('scaleX(-1)')) {
-      isFlipped = true;
-    }
-  }
   
   // Create a canvas
   const canvas = document.createElement('canvas');
@@ -477,25 +247,48 @@ async function renderAndCopyOrInsert(action, commentArea) {
   await new Promise(res => { mainImg.onload = res; });
   ctx.drawImage(mainImg, 0, 0, canvas.width, canvas.height);
   
-  // Calculate overlay position/size/rotation relative to the main image
+  // Calculate scale factors for container to canvas
   const scaleX = canvas.width / container.offsetWidth;
   const scaleY = canvas.height / container.offsetHeight;
-  const overlayLeft = overlay.offsetLeft * scaleX;
-  const overlayTop = overlay.offsetTop * scaleY;
-  const overlayWidth = overlay.offsetWidth * scaleX;
-  const aspectRatio = overlay.naturalWidth / overlay.naturalHeight;
-  const overlayHeight = overlayWidth / aspectRatio;
   
-  // Draw the overlay with rotation and flip, aligning top-left then rotating around center
-  ctx.save();
-  ctx.translate(overlayLeft, overlayTop); // Move to overlay's top-left
-  ctx.translate(overlayWidth/2, overlayHeight/2); // Move to center of overlay
-  ctx.rotate(angle);
-  if (isFlipped) {
-    ctx.scale(-1, 1); // Apply horizontal flip
+  // Draw each overlay
+  for (const overlayContainer of window.nomnomOverlays) {
+    // Get the overlay image inside the container
+    const overlayImg = overlayContainer.querySelector('img');
+    if (!overlayImg) continue;
+
+    // Get overlay position, size
+    const overlayLeft = overlayContainer.offsetLeft * scaleX;
+    const overlayTop = overlayContainer.offsetTop * scaleY;
+    const overlayWidth = overlayContainer.offsetWidth * scaleX;
+    const aspectRatio = overlayImg.naturalWidth / overlayImg.naturalHeight;
+    const overlayHeight = overlayWidth / aspectRatio;
+
+    // Get rotation and flip from overlayImg.style.transform
+    const transform = overlayImg.style.transform;
+    let angle = 0;
+    let isFlipped = false;
+    if (transform) {
+      const rotMatch = transform.match(/rotate\(([-0-9.]+)rad\)/);
+      if (rotMatch) {
+        angle = parseFloat(rotMatch[1]);
+      }
+      if (transform.includes('scaleX(-1)')) {
+        isFlipped = true;
+      }
+    }
+
+    // Draw the overlay with rotation and flip
+    ctx.save();
+    ctx.translate(overlayLeft, overlayTop); // Move to overlay's top-left
+    ctx.translate(overlayWidth/2, overlayHeight/2); // Move to center of overlay
+    ctx.rotate(angle);
+    if (isFlipped) {
+      ctx.scale(-1, 1); // Apply horizontal flip
+    }
+    ctx.drawImage(overlayImg, -overlayWidth/2, -overlayHeight/2, overlayWidth, overlayHeight);
+    ctx.restore();
   }
-  ctx.drawImage(overlay, -overlayWidth/2, -overlayHeight/2, overlayWidth, overlayHeight);
-  ctx.restore();
   
   // Export as blob
   canvas.toBlob(async (blob) => {
@@ -618,4 +411,272 @@ const nomnomReplyObserver = new MutationObserver(() => {
 nomnomReplyObserver.observe(document.body, { childList: true, subtree: true });
 
 // Initial injection
-injectNomNomReplyButtons(); 
+injectNomNomReplyButtons();
+
+// Function to add a new NomNom overlay
+function addNewNomNomOverlay() {
+  const container = document.getElementById('overlays-container');
+  if (!container) return;
+
+  // Create overlay container
+  const overlayContainer = document.createElement('div');
+  overlayContainer.className = 'nomnom-overlay';
+  overlayContainer.style.position = 'absolute';
+  overlayContainer.style.top = (50 + window.nomnomOverlays.length * 20) + 'px';
+  overlayContainer.style.left = (50 + window.nomnomOverlays.length * 20) + 'px';
+  overlayContainer.style.width = '100px';
+  overlayContainer.style.height = '100px';
+  overlayContainer.style.cursor = 'move';
+  overlayContainer.style.zIndex = 2;
+  overlayContainer.style.userSelect = 'none';
+  overlayContainer.style.touchAction = 'none';
+
+  // Create overlay image
+  const overlayImg = document.createElement('img');
+  overlayImg.src = chrome.runtime.getURL('icons/nomnom.png');
+  overlayImg.alt = 'NomNom overlay';
+  overlayImg.style.width = '100%';
+  overlayImg.style.height = '100%';
+  overlayImg.style.pointerEvents = 'none'; // So handles/buttons get mouse events
+  overlayImg.draggable = false;
+
+  // Create remove button
+  const removeBtn = document.createElement('button');
+  removeBtn.textContent = '✕';
+  removeBtn.className = 'remove-nomnom-btn';
+  removeBtn.style.position = 'absolute';
+  removeBtn.style.top = '50%';
+  removeBtn.style.left = 'auto';
+  removeBtn.style.right = '0';
+  removeBtn.style.bottom = 'auto';
+  removeBtn.style.transform = 'translateY(-50%)';
+  removeBtn.style.height = '24px';
+  removeBtn.style.background = 'none';
+  removeBtn.style.border = 'none';
+  removeBtn.style.cursor = 'pointer';
+  removeBtn.onclick = (e) => {
+    e.stopPropagation();
+    overlayContainer.remove();
+    window.nomnomOverlays = window.nomnomOverlays.filter(o => o !== overlayContainer);
+  };
+
+  // Add overlay image and remove button to container
+  overlayContainer.appendChild(overlayImg);
+  overlayContainer.appendChild(removeBtn);
+  container.appendChild(overlayContainer);
+  window.nomnomOverlays.push(overlayContainer);
+
+  // Set up overlay interactions (move, resize, rotate, flip)
+  setupOverlayInteractions(overlayContainer, overlayImg);
+  return overlayContainer;
+}
+
+// Function to set up interactions for an overlay (drag, resize, rotate, flip)
+function setupOverlayInteractions(overlayContainer, overlayImg) {
+  const container = document.getElementById('edit-image-container');
+  if (!container) return;
+
+  let dragging = false, rotating = false;
+  let startX, startY, startLeft, startTop, startAngle, centerX, centerY;
+  let isFlipped = false;
+
+  // Store the natural aspect ratio of the overlay image
+  let overlayAspectRatio = 1;
+  function setOverlayInitialSize() {
+    if (overlayImg.naturalWidth && overlayImg.naturalHeight) {
+      overlayAspectRatio = overlayImg.naturalWidth / overlayImg.naturalHeight;
+      overlayContainer.style.width = '100px';
+      overlayContainer.style.height = (100 / overlayAspectRatio) + 'px';
+    }
+  }
+  if (overlayImg.naturalWidth && overlayImg.naturalHeight) {
+    setOverlayInitialSize();
+  } else {
+    overlayImg.onload = setOverlayInitialSize;
+  }
+
+  // Create resize handles
+  const corners = ['nw', 'ne', 'sw', 'se'];
+  const resizeHandles = {};
+  corners.forEach(corner => {
+    const handle = document.createElement('div');
+    handle.className = 'resize-handle';
+    handle.dataset.corner = corner;
+    // Restore original positioning
+    handle.style.position = 'absolute';
+    handle.style.width = '12px';
+    handle.style.height = '12px';
+    handle.style.background = '#ffd166';
+    handle.style.borderRadius = '50%';
+    handle.style.border = '2px solid #fff';
+    handle.style.zIndex = '1002';
+    if (corner === 'nw') {
+        handle.style.top = '-6px';
+        handle.style.left = '-6px';
+        handle.style.cursor = 'nwse-resize';
+    } else if (corner === 'ne') {
+        handle.style.top = '-6px';
+        handle.style.right = '-6px';
+        handle.style.cursor = 'nesw-resize';
+    } else if (corner === 'sw') {
+        handle.style.bottom = '-6px';
+        handle.style.left = '-6px';
+        handle.style.cursor = 'nesw-resize';
+    } else if (corner === 'se') {
+        handle.style.bottom = '-6px';
+        handle.style.right = '-6px';
+        handle.style.cursor = 'nwse-resize';
+    }
+    overlayContainer.appendChild(handle);
+    handle.onmousedown = (e) => {
+        e.stopPropagation();
+        const corner = handle.dataset.corner;
+        startX = e.clientX;
+        startY = e.clientY;
+        const startWidth = overlayContainer.offsetWidth;
+        const startHeight = overlayContainer.offsetHeight;
+        startLeft = overlayContainer.offsetLeft;
+        startTop = overlayContainer.offsetTop;
+        const aspectRatio = overlayAspectRatio;
+        document.onmousemove = (ev) => {
+            let dx = ev.clientX - startX;
+            let newWidth = startWidth;
+            let newLeft = startLeft;
+            if (corner === 'nw' || corner === 'sw') {
+                newWidth = Math.max(30, startWidth - dx);
+                newLeft = startLeft + (startWidth - newWidth);
+            } else if (corner === 'ne' || corner === 'se') {
+                newWidth = Math.max(30, startWidth + dx);
+            }
+            overlayContainer.style.width = newWidth + 'px';
+            overlayContainer.style.height = (newWidth / aspectRatio) + 'px';
+            overlayContainer.style.left = newLeft + 'px';
+            if (corner === 'nw' || corner === 'ne') {
+                overlayContainer.style.top = startTop + (startHeight - overlayContainer.offsetHeight) + 'px';
+            }
+        };
+        document.onmouseup = () => {
+            document.onmousemove = null;
+            document.onmouseup = null;
+        };
+    };
+  });
+
+  // Create rotate handle
+  const rotateHandle = document.createElement('div');
+  rotateHandle.className = 'rotate-handle';
+  rotateHandle.style.top = '-22px';
+  rotateHandle.style.left = '50%';
+  rotateHandle.style.transform = 'translateX(-50%)';
+  rotateHandle.innerHTML = '<span style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;font-size:12px;">↻</span>';
+  // Restore original styles for rotate handle
+  rotateHandle.style.position = 'absolute';
+  rotateHandle.style.top = '-22px';
+  rotateHandle.style.left = '50%';
+  rotateHandle.style.transform = 'translateX(-50%)';
+  rotateHandle.style.width = '16px';
+  rotateHandle.style.height = '16px';
+  rotateHandle.style.background = '#ffa600';
+  rotateHandle.style.borderRadius = '50%';
+  rotateHandle.style.border = '2px solid #fff';
+  rotateHandle.style.zIndex = '1002';
+  rotateHandle.style.display = 'flex';
+  rotateHandle.style.alignItems = 'center';
+  rotateHandle.style.justifyContent = 'center';
+  rotateHandle.style.color = '#fff';
+  rotateHandle.style.fontSize = '12px';
+  rotateHandle.style.cursor = 'grab';
+  overlayContainer.appendChild(rotateHandle);
+  console.log('Appended rotate handle:', rotateHandle, 'to', overlayContainer);
+
+  // Create flip handle
+  const flipHandle = document.createElement('div');
+  flipHandle.className = 'flip-handle';
+  flipHandle.style.bottom = '-22px';
+  flipHandle.style.left = '50%';
+  flipHandle.style.transform = 'translateX(-50%)';
+  flipHandle.innerHTML = '<span style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;font-size:12px;">⇄</span>';
+  // Restore original styles for flip handle
+  flipHandle.style.position = 'absolute';
+  flipHandle.style.bottom = '-22px';
+  flipHandle.style.left = '50%';
+  flipHandle.style.transform = 'translateX(-50%)';
+  flipHandle.style.width = '16px';
+  flipHandle.style.height = '16px';
+  flipHandle.style.background = '#ffa600';
+  flipHandle.style.borderRadius = '50%';
+  flipHandle.style.border = '2px solid #fff';
+  flipHandle.style.zIndex = '1002';
+  flipHandle.style.display = 'flex';
+  flipHandle.style.alignItems = 'center';
+  flipHandle.style.justifyContent = 'center';
+  flipHandle.style.color = '#fff';
+  flipHandle.style.fontSize = '12px';
+  flipHandle.style.cursor = 'pointer';
+  overlayContainer.appendChild(flipHandle);
+  console.log('Appended flip handle:', flipHandle, 'to', overlayContainer);
+
+  // Store angle for rotation
+  let currentAngle = 0;
+
+  // Move
+  overlayContainer.onmousedown = (e) => {
+    if (e.target !== overlayContainer) return;
+    dragging = true;
+    startX = e.clientX - overlayContainer.offsetLeft;
+    startY = e.clientY - overlayContainer.offsetTop;
+    document.onmousemove = (ev) => {
+      if (dragging) {
+        let newLeft = ev.clientX - startX;
+        let newTop = ev.clientY - startY;
+        overlayContainer.style.left = newLeft + 'px';
+        overlayContainer.style.top = newTop + 'px';
+      }
+    };
+    document.onmouseup = () => {
+      dragging = false;
+      document.onmousemove = null;
+      document.onmouseup = null;
+    };
+  };
+
+  // Rotate
+  rotateHandle.onmousedown = (e) => {
+    e.stopPropagation();
+    rotating = true;
+    const rect = overlayContainer.getBoundingClientRect();
+    centerX = rect.left + rect.width / 2;
+    centerY = rect.top + rect.height / 2;
+    // Calculate current angle
+    const transform = overlayImg.style.transform;
+    let initialAngle = 0;
+    if (transform && transform.includes('rotate(')) {
+      initialAngle = parseFloat(transform.match(/rotate\(([-0-9.]+)rad\)/)?.[1] || '0');
+    }
+    // Store the angle between mouse and center at drag start
+    const startMouseAngle = Math.atan2(e.clientY - centerY, e.clientX - centerX);
+    document.onmousemove = (ev) => {
+      if (rotating) {
+        const currentMouseAngle = Math.atan2(ev.clientY - centerY, ev.clientX - centerX);
+        const delta = currentMouseAngle - startMouseAngle;
+        currentAngle = initialAngle + delta;
+        overlayImg.style.transform = `rotate(${currentAngle}rad) scaleX(${isFlipped ? -1 : 1})`;
+      }
+    };
+    document.onmouseup = () => {
+      rotating = false;
+      document.onmousemove = null;
+      document.onmouseup = null;
+    };
+  };
+
+  // Flip
+  flipHandle.onclick = (e) => {
+    e.stopPropagation();
+    isFlipped = !isFlipped;
+    overlayImg.style.transform = `rotate(${currentAngle}rad) scaleX(${isFlipped ? -1 : 1})`;
+  };
+
+  // Prevent image drag ghost
+  overlayContainer.ondragstart = () => false;
+} 
