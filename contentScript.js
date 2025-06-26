@@ -168,7 +168,7 @@ function showNomnomEditor(imgSrc, commentArea) {
       addNewNomNomOverlay();
       
       // Set up close button
-      document.getElementById('nomnom-close').onclick = () => modalElem.remove();
+      document.getElementById('nomnom-close').onclick = () => modal.remove();
       
       // Set up copy/insert buttons
       document.getElementById('copy-btn').onclick = async () => {
@@ -563,42 +563,15 @@ function setupOverlayInteractions(overlayContainer, overlayImg) {
   });
 
   // Create rotate handle
-  const rotateHandle = document.createElement('div');
-  rotateHandle.className = 'rotate-handle';
-  rotateHandle.style.top = '-22px';
-  rotateHandle.style.left = '50%';
-  rotateHandle.style.transform = 'translateX(-50%)';
-  rotateHandle.innerHTML = '<span style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;font-size:12px;">↻</span>';
-  // Restore original styles for rotate handle
-  rotateHandle.style.position = 'absolute';
-  rotateHandle.style.top = '-22px';
-  rotateHandle.style.left = '50%';
-  rotateHandle.style.transform = 'translateX(-50%)';
-  rotateHandle.style.width = '16px';
-  rotateHandle.style.height = '16px';
-  rotateHandle.style.background = '#ffa600';
-  rotateHandle.style.borderRadius = '50%';
-  rotateHandle.style.border = '2px solid #fff';
-  rotateHandle.style.zIndex = '1002';
-  rotateHandle.style.display = 'flex';
-  rotateHandle.style.alignItems = 'center';
-  rotateHandle.style.justifyContent = 'center';
-  rotateHandle.style.color = '#fff';
-  rotateHandle.style.fontSize = '12px';
-  rotateHandle.style.cursor = 'grab';
-  overlayContainer.appendChild(rotateHandle);
-  console.log('Appended rotate handle:', rotateHandle, 'to', overlayContainer);
-
-  // Create flip handle
   const flipHandle = document.createElement('div');
-  flipHandle.className = 'flip-handle';
-  flipHandle.style.bottom = '-22px';
+  flipHandle.className = 'rotate-handle';
+  flipHandle.style.top = '-22px';
   flipHandle.style.left = '50%';
   flipHandle.style.transform = 'translateX(-50%)';
   flipHandle.innerHTML = '<span style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;font-size:12px;">⇄</span>';
-  // Restore original styles for flip handle
+  // Restore original styles for rotate handle
   flipHandle.style.position = 'absolute';
-  flipHandle.style.bottom = '-22px';
+  flipHandle.style.top = '-22px';
   flipHandle.style.left = '50%';
   flipHandle.style.transform = 'translateX(-50%)';
   flipHandle.style.width = '16px';
@@ -612,9 +585,36 @@ function setupOverlayInteractions(overlayContainer, overlayImg) {
   flipHandle.style.justifyContent = 'center';
   flipHandle.style.color = '#fff';
   flipHandle.style.fontSize = '12px';
-  flipHandle.style.cursor = 'pointer';
+  flipHandle.style.cursor = 'grab';
   overlayContainer.appendChild(flipHandle);
-  console.log('Appended flip handle:', flipHandle, 'to', overlayContainer);
+  console.log('Appended rotate handle:', flipHandle, 'to', overlayContainer);
+
+  // Create flip handle
+  const rotateHandle = document.createElement('div');
+  rotateHandle.className = 'flip-handle';
+  rotateHandle.style.bottom = '-22px';
+  rotateHandle.style.left = '50%';
+  rotateHandle.style.transform = 'translateX(-50%)';
+  rotateHandle.innerHTML = '<span style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;font-size:12px;">↻</span>';
+  // Restore original styles for flip handle
+  rotateHandle.style.position = 'absolute';
+  rotateHandle.style.bottom = '-22px';
+  rotateHandle.style.left = '50%';
+  rotateHandle.style.transform = 'translateX(-50%)';
+  rotateHandle.style.width = '16px';
+  rotateHandle.style.height = '16px';
+  rotateHandle.style.background = '#ffa600';
+  rotateHandle.style.borderRadius = '50%';
+  rotateHandle.style.border = '2px solid #fff';
+  rotateHandle.style.zIndex = '1002';
+  rotateHandle.style.display = 'flex';
+  rotateHandle.style.alignItems = 'center';
+  rotateHandle.style.justifyContent = 'center';
+  rotateHandle.style.color = '#fff';
+  rotateHandle.style.fontSize = '12px';
+  rotateHandle.style.cursor = 'pointer';
+  overlayContainer.appendChild(rotateHandle);
+  console.log('Appended flip handle:', rotateHandle, 'to', overlayContainer);
 
   // Store angle for rotation
   let currentAngle = 0;
@@ -640,7 +640,14 @@ function setupOverlayInteractions(overlayContainer, overlayImg) {
     };
   };
 
-  // Rotate
+  // Assign flip logic to flipHandle (top handle)
+  flipHandle.onclick = (e) => {
+    e.stopPropagation();
+    isFlipped = !isFlipped;
+    overlayImg.style.transform = `rotate(${currentAngle}rad) scaleX(${isFlipped ? -1 : 1})`;
+  };
+
+  // Assign rotate logic to rotateHandle (bottom handle)
   rotateHandle.onmousedown = (e) => {
     e.stopPropagation();
     rotating = true;
@@ -668,13 +675,6 @@ function setupOverlayInteractions(overlayContainer, overlayImg) {
       document.onmousemove = null;
       document.onmouseup = null;
     };
-  };
-
-  // Flip
-  flipHandle.onclick = (e) => {
-    e.stopPropagation();
-    isFlipped = !isFlipped;
-    overlayImg.style.transform = `rotate(${currentAngle}rad) scaleX(${isFlipped ? -1 : 1})`;
   };
 
   // Prevent image drag ghost
