@@ -65,24 +65,29 @@
         }
 
         .nomnom-editor-btns {
-            display: flex;
-            gap: 12px;
-            margin-top: 12px;
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 12px !important;
+            margin-top: 12px !important;
+            align-items: stretch !important;
         }
 
         .nomnom-editor-btns button {
-            padding: 8px 16px;
-            border-radius: 6px;
-            border: none;
-            background: #ffd166;
-            color: #222;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background 0.2s;
+            padding: 8px 16px !important;
+            border-radius: 6px !important;
+            border: none !important;
+            background: #ffd166 !important;
+            color: #222 !important;
+            font-weight: bold !important;
+            cursor: pointer !important;
+            transition: background 0.2s !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+            display: block !important;
         }
 
         .nomnom-editor-btns button:hover {
-            background: #ffa600;
+            background: #ffa600 !important;
         }
 
         #nomnom-close {
@@ -224,16 +229,22 @@
                 <input id="hidden-paste-input" type="text"
                     style="position:absolute;left:-9999px;top:-9999px;opacity:0;width:1px;height:1px;" autofocus>
             </div>
-            <div class="nomnom-editor-btns" style="display:flex;gap:12px;margin-top:12px;">
-                <button id="add-nomnom-btn"
-                    style="padding:8px 16px;border-radius:6px;border:none;background:#ffd166;color:#222;font-weight:bold;cursor:pointer;transition:background 0.2s;">Add
-                    NomNom</button>
-                <button id="copy-btn"
-                    style="padding:8px 16px;border-radius:6px;border:none;background:#ffd166;color:#222;font-weight:bold;cursor:pointer;transition:background 0.2s;">Copy
-                    to Clipboard</button>
-                <button id="paste-btn"
-                    style="padding:8px 16px;border-radius:6px;border:none;background:#ffd166;color:#222;font-weight:bold;cursor:pointer;transition:background 0.2s;">Paste
-                    Image</button>
+            <div class="nomnom-editor-btns" style="display: flex; flex-direction: column; width: 100%;">
+                <div style="display: flex; gap: 12px; width: 100%;">
+                    <button id="add-nomnom-btn"
+                        style="flex: 1; padding:8px 16px;border-radius:6px;border:none;background:#ffd166;color:#222;font-weight:bold;cursor:pointer;transition:background 0.2s;">Add
+                        NomNom</button>
+                    <button id="copy-btn"
+                        style="padding:8px 16px;border-radius:6px;border:none;background:#ffd166;color:#222;font-weight:bold;cursor:pointer;transition:background 0.2s;">Copy</button>
+                    <button id="paste-btn"
+                        style="padding:8px 16px;border-radius:6px;border:none;background:#ffd166;color:#222;font-weight:bold;cursor:pointer;transition:background 0.2s;">Paste
+                        Image</button>
+                </div>
+                <div style="display: flex; justify-content: left; margin-top: 12px;">
+                    <button id="add-nomnom-leg-btn"
+                        style="padding:8px 16px;border-radius:6px;border:none;background:#ffd166;color:#222;font-weight:bold;cursor:pointer;transition:background 0.2s;">Add
+                        NomNom w/ leg</button>
+                </div>
             </div>
         </div>
     </div>

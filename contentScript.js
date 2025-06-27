@@ -164,6 +164,9 @@ function showNomnomEditor(imgSrc, commentArea) {
       document.getElementById('add-nomnom-btn').onclick = () => {
         addNewNomNomOverlay();
       };
+      document.getElementById('add-nomnom-leg-btn').onclick = () => {
+        addNewNomNomOverlay('icons/nomnom-leg.png');
+      };
       
       // Add the first overlay
       addNewNomNomOverlay();
@@ -415,7 +418,7 @@ nomnomReplyObserver.observe(document.body, { childList: true, subtree: true });
 injectNomNomReplyButtons();
 
 // Function to add a new NomNom overlay
-function addNewNomNomOverlay() {
+function addNewNomNomOverlay(imgPath) {
   const container = document.getElementById('overlays-container');
   if (!container) return;
 
@@ -434,7 +437,7 @@ function addNewNomNomOverlay() {
 
   // Create overlay image
   const overlayImg = document.createElement('img');
-  overlayImg.src = chrome.runtime.getURL('icons/nomnom.png');
+  overlayImg.src = chrome.runtime.getURL(imgPath || 'icons/nomnom.png');
   overlayImg.alt = 'NomNom overlay';
   overlayImg.style.width = '100%';
   overlayImg.style.height = '100%';
