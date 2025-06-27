@@ -142,13 +142,14 @@ function showNomnomEditor(imgSrc, commentArea) {
       const container = document.getElementById('edit-image-container');
       editImg.onload = function() {
         const aspect = editImg.naturalWidth / editImg.naturalHeight;
-        let width = 300, height = 300;
+        let baseSize = 500;
+        let width = baseSize, height = baseSize;
         if (aspect > 1) {
-          width = 300;
-          height = 300 / aspect;
+          width = baseSize;
+          height = baseSize / aspect;
         } else {
-          height = 300;
-          width = 300 * aspect;
+          height = baseSize;
+          width = baseSize * aspect;
         }
         container.style.width = width + 'px';
         container.style.height = height + 'px';
